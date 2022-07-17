@@ -1,46 +1,33 @@
 package main
 
 import (
-	"fmt"
+	"go-api/src/controller"
+	"go-api/src/database"
+	"go-api/src/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
-func HomePage(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "Hello World",
-	})
-}
-
-func PostHomePage(c *gin.Context) {
-	message := c.PostForm("message")
-	c.JSON(200, gin.H{
-		"message": message,
-	})
-}
-
-func QueryString(c *gin.Context) {
-	name := c.Query("name")
-	age := c.Query("age")
-	c.JSON(200, gin.H{
-		"name": name,
-		"age":  age,
-	})
+func initRouter() *gin.Engine {
+	router := gin.Default()
+	api := router.Group("/api")
+	{
+		api.POST("/token", controller.GenerateToken)
+		api.POST("/user/register", controller.RegisterUser)
+		secured := api.Group("/secured").Use(middlewares.Auth())
+		{
+			secured.GET("/ping", controller.Ping)
+		}
+	}
+	return router
 }
 
 func main() {
-	fmt.Println("Hello, World!")
 
-	r := gin.Default()
+	database.Connect("root:root@tcp(localhost:3306)/sohaidatabase?parseTime=true")
+	database.Migrate()
+	// Initialize Router
+	router := initRouter()
+	router.Run(":8080")
 
-	r.GET("/", HomePage)
-	r.GET("/query", QueryString)
-	r.POST("/PostHomePage", PostHomePage)
-	r.GET("/nihao", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Nihao!"},
-		)
-	})
-
-	r.Run("8090")
 }
